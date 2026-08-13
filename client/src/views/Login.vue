@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api.js';
 import { useToast } from '../composables.js';

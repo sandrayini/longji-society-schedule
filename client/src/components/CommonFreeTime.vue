@@ -31,15 +31,29 @@ const props = defineProps({ activity: Object, submissions: Array });
 
 const result = computed(() => {
   if (!props.activity || !props.submissions) return { common: [], fallback: [], warnings: [] };
-  const range = { start: props.activity.rangeStart, end: props.activity.rangeEnd };
+  const range = { start: toLocalISO(props.activity.rangeStart), end: toLocalISO(props.activity.rangeEnd) };
   const memberIntervals = props.submissions.map(s => {
-    const data = JSON.parse(s.data || '{}');
-    const free = data.freeIntervals || [];
-    const busy = data.busyIntervals || [];
+    let data = {};
+    try {
+      data = typeof s.data === 'string' ? JSON.parse(s.data || '{}') : (s.data || {});
+    } catch (err) {
+      console.warn('解析提交数据失败', s.data, err);
+    }
+    const free = (data.freeIntervals || []).map(iv => ({ start: toLocalISO(iv.start), end: toLocalISO(iv.end) }));
+    const busy = (data.busyIntervals || []).map(iv => ({ start: toLocalISO(iv.start), end: toLocalISO(iv.end) }));
     return { userId: s.userId, name: s.name, free, busy };
   });
   return computeCommonFree(range, memberIntervals);
 });
+
+function toLocalISO(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  // keep local time as ISO-like string without timezone offset
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const common = computed(() => result.value.common);
 const fallback = computed(() => result.value.fallback);

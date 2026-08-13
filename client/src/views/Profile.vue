@@ -26,17 +26,19 @@
       <button class="btn btn-primary" style="width:100%" @click="saveContact" :disabled="loadingContact">保存</button>
     </div>
 
-    <button class="btn btn-secondary" style="width:100%;margin-top:12px" @click="auth.logout()">退出登录</button>
+    <button class="btn btn-secondary" style="width:100%;margin-top:12px" @click="doLogout">退出登录</button>
   </div>
 </template>
 
 <script setup>
 import { inject, ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import api from '../api.js';
 import { useToast } from '../composables.js';
 import { colorOf, initial } from '../utils.js';
 
 const auth = inject('auth');
+const router = useRouter();
 const { show } = useToast();
 const pwd = ref({ new: '', confirm: '' });
 const contact = ref('');
@@ -47,6 +49,11 @@ onMounted(async () => {
   await auth.loadUser();
   contact.value = auth.user.value?.contact || '';
 });
+
+function doLogout() {
+  auth.logout();
+  router.push('/login');
+}
 
 async function changePassword() {
   if (pwd.value.new.length < 6) { show('密码至少6位', 'error'); return; }

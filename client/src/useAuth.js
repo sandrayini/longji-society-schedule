@@ -1,47 +1,47 @@
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import api from './api.js';
 
-export function useAuth() {
-  const token = ref(localStorage.getItem('token') || null);
-  const user = ref(null);
-  const router = useRouter();
+const token = ref(localStorage.getItem('token') || null);
+const user = ref(null);
 
-  async function loadUser() {
-    if (!token.value) return;
-    try {
-      const res = await api.get('/me');
-      user.value = res.data;
-      if (user.value.forcePasswordChange && router.currentRoute.value.path !== '/profile') {
-        router.push('/profile');
-      }
-    } catch (e) {
-      if (e.response?.status === 401) {
-        logout();
-      }
+async function loadUser() {
+  if (!token.value) return;
+  const { default: api } = await import('./api.js');
+  try {
+    const res = await api.get('/me');
+    user.value = res.data;
+  } catch (e) {
+    if (e.response?.status === 401) {
+      logout();
     }
   }
+}
 
-  function setToken(t) {
-    token.value = t;
-    localStorage.setItem('token', t);
+function setToken(t) {
+  token.value = t;
+  localStorage.setItem('token', t);
+  import('./api.js').then(({ default: api }) => {
     api.defaults.headers.common.Authorization = `Bearer ${t}`;
-  }
+  });
+}
 
-  function logout() {
-    token.value = null;
-    user.value = null;
-    localStorage.removeItem('token');
+function logout() {
+  token.value = null;
+  user.value = null;
+  localStorage.removeItem('token');
+  import('./api.js').then(({ default: api }) => {
     delete api.defaults.headers.common.Authorization;
-    router.push('/login');
-  }
+  });
+}
 
-  const isAdmin = computed(() => user.value?.role === 'admin');
-  const isLoggedIn = computed(() => !!user.value);
+const isAdmin = computed(() => user.value?.role === 'admin');
+const isLoggedIn = computed(() => !!user.value);
 
-  if (token.value) {
+if (token.value) {
+  import('./api.js').then(({ default: api }) => {
     api.defaults.headers.common.Authorization = `Bearer ${token.value}`;
-  }
+  });
+}
 
+export function useAuth() {
   return { token, user, isAdmin, isLoggedIn, setToken, logout, loadUser };
 }
