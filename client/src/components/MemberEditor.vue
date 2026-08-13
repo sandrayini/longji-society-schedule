@@ -3,20 +3,29 @@
     <div class="modal-card">
       <h3 class="modal-title">👤 成员管理</h3>
       <div class="list">
-        <div v-for="m in members" :key="m.id" class="member-row">
+        <div v-for="m in members" :key="m.id" class="member-row" :class="{ inactive: m.active === 0 }">
           <div class="badge" :style="{background: colorOf(m.id)}">{{ initial(m.name) }}</div>
           <div class="info">
-            <div class="name">{{ m.name }}</div>
+            <div class="name">
+              {{ m.name }}
+              <span v-if="m.active === 0" class="inactive-tag">已停用</span>
+            </div>
             <div class="contact">{{ (m.position || m.role) || '成员' }} · {{ m.contact || '无联系方式' }}</div>
           </div>
           <div class="actions">
             <button class="btn btn-sm btn-secondary" @click="edit(m)">编辑</button>
             <button class="btn btn-sm btn-danger" @click="resetPwd(m)">重置密码</button>
+            <button class="btn btn-sm btn-danger" @click="confirmDelete(m)">删除</button>
           </div>
         </div>
       </div>
       <button class="btn btn-primary" style="width:100%;margin:12px 0" @click="add">新增成员</button>
       <button class="btn btn-secondary" style="width:100%" @click="$emit('close')">关闭</button>
+
+      <ConfirmModal v-if="deleteTarget" title="确认删除" @confirm="doDelete" @cancel="deleteTarget=null">
+        <p>删除后该成员的账号、资料及其所有活动提交记录将被永久删除，不可恢复。</p>
+        <p>确定删除成员【{{ deleteTarget.name }}】吗？</p>
+      </ConfirmModal>
 
       <div v-if="editing" class="editor">
         <h4>{{ editing.id ? '编辑成员' : '新增成员' }}</h4>
@@ -45,12 +54,14 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import api from '../api.js';
 import { useToast } from '../composables.js';
 import { colorOf, initial } from '../utils.js';
+import ConfirmModal from './ConfirmModal.vue';
 
 const STASH_KEY = 'member_editor_draft';
 const emit = defineEmits(['close', 'saved']);
 const { show } = useToast();
 const members = ref([]);
 const editing = ref(null);
+const deleteTarget = ref(null);
 
 async function load() {
   const res = await api.get('/members');
@@ -108,6 +119,21 @@ async function resetPwd(m) {
   }
 }
 
+function confirmDelete(m) { deleteTarget.value = m; }
+
+async function doDelete() {
+  if (!deleteTarget.value) return;
+  try {
+    await api.delete(`/members/${deleteTarget.value.id}`);
+    show('成员已删除', 'success');
+    deleteTarget.value = null;
+    await load();
+    emit('saved');
+  } catch (e) {
+    show(e.response?.data?.error || '删除失败', 'error');
+  }
+}
+
 onMounted(load);
 onUnmounted(clearStash);
 </script>
@@ -121,6 +147,9 @@ onUnmounted(clearStash);
 .name { font-weight: 500; }
 .contact { font-size: 12px; color: var(--text-light); }
 .actions { display: flex; gap: 6px; }
+.member-row.inactive .badge { opacity: 0.45; filter: grayscale(0.6); }
+.member-row.inactive .name { color: #a39b92; }
+.inactive-tag { font-size: 10px; color: #fff; background: #c8bdb0; border-radius: 999px; padding: 2px 8px; margin-left: 6px; }
 .editor { background: #FFFCF7; border-radius: 18px; padding: 16px; margin-top: 14px; }
 .row-btns { display: flex; gap: 10px; margin-top: 10px; }
 .row-btns .btn { flex: 1; }

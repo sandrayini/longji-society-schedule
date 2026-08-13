@@ -5,7 +5,7 @@
       <div class="confirm-body"><slot /></div>
       <div class="confirm-actions">
         <button class="btn btn-secondary" @click="$emit('cancel')">取消</button>
-        <button class="btn btn-danger" @click="$emit('confirm')">确认删除</button>
+        <button class="btn btn-danger" @click="$emit('confirm')">确认</button>
       </div>
     </div>
   </div>

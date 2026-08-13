@@ -53,13 +53,14 @@ router.get('/:id', authMiddleware, (req, res) => {
   const activity = rowToActivity(row);
   activity.myUserId = req.user.id;
 
-  const allMembers = db.prepare('SELECT id, name, role, contact, active, position FROM users ORDER BY created_at').all();
+  const allMembers = db.prepare('SELECT id, name, role, contact, active, position FROM users WHERE role = ? ORDER BY created_at').all('member');
+  const activeMemberIds = new Set(allMembers.filter(u => u.active).map(u => u.id));
   activity.allMembers = allMembers.filter(u => u.active).map(u => ({
     id: u.id, name: u.name, role: u.role, contact: u.contact, position: u.position
   }));
 
   const subRows = db.prepare('SELECT s.*, u.name FROM submissions s JOIN users u ON s.user_id = u.id WHERE s.activity_id = ? ORDER BY s.updated_at DESC').all(req.params.id);
-  const submissions = subRows.map(s => ({
+  const submissions = subRows.filter(s => activeMemberIds.has(s.user_id)).map(s => ({
     id: s.id,
     activityId: s.activity_id,
     userId: s.user_id,

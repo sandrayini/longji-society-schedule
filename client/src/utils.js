@@ -41,10 +41,14 @@ export function statusClass(a) {
 export function mySubmitStatus(activity, submissions, myUserId) {
   if (!myUserId || !submissions) return 'none';
   const s = submissions.find(x => x.userId === myUserId || x.user_id === myUserId);
+  if (!s) return 'none';
   if (activity.type === 'fixed') {
-    return s ? (s.data?.attending ? 'filled' : 'filled') : 'none';
+    return typeof s.data?.attending === 'boolean' ? 'filled' : 'none';
   }
-  return s ? 'filled' : 'none';
+  const d = s.data || {};
+  const hasFree = Array.isArray(d.freeIntervals) && d.freeIntervals.length > 0;
+  const hasBusy = Array.isArray(d.busyIntervals) && d.busyIntervals.length > 0;
+  return hasFree || hasBusy ? 'filled' : 'none';
 }
 
 export function pad(n) { return String(n).padStart(2, '0'); }

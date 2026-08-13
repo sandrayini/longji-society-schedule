@@ -9,12 +9,13 @@
         成员列表
         <button v-if="auth.isAdmin.value" class="btn btn-sm btn-secondary" style="margin-left:auto" @click="showMemberEditor=true">管理</button>
       </div>
-      <div v-if="members.length===0" class="empty">暂无成员</div>
+      <div v-if="visibleMembers.length===0" class="empty">暂无成员</div>
       <div class="members-row">
-        <div v-for="m in members" :key="m.id" class="member-chip">
+        <div v-for="m in visibleMembers" :key="m.id" class="member-chip" :class="{ inactive: m.active === 0 }">
           <div class="badge" :style="{background: colorOf(m.id)}">{{ initial(m.name) }}</div>
           <span class="member-name">{{ m.name }}</span>
           <span class="member-role">{{ (m.position || m.role) || '成员' }}</span>
+          <span v-if="m.active === 0" class="inactive-tag">已停用</span>
         </div>
       </div>
     </div>
@@ -70,6 +71,11 @@ const showActivityEditor = ref(false);
 const deleteTarget = ref(null);
 
 const myUserId = computed(() => auth.user.value?.id);
+const myRole = computed(() => auth.user.value?.role);
+const visibleMembers = computed(() => {
+  if (myRole.value === 'admin') return members.value;
+  return members.value.filter(m => m.active === 1);
+});
 const activitiesWithStatus = computed(() => activities.value.map(a => ({ ...a, filled: mySubmitStatus(a, a.submissions, myUserId.value) })));
 
 function openActivityEditor() { showActivityEditor.value = true; }
@@ -104,6 +110,9 @@ async function doDelete() {
 }
 .member-name { font-size: 13px; margin-top: 6px; font-weight: 500; }
 .member-role { font-size: 11px; color: var(--text-light); }
+.member-chip.inactive .badge { opacity: 0.45; filter: grayscale(0.6); }
+.member-chip.inactive .member-name { color: #a39b92; }
+.inactive-tag { font-size: 10px; color: #fff; background: #c8bdb0; border-radius: 999px; padding: 2px 6px; margin-top: 4px; }
 
 .activity-item {
   background: #FFFCF7;
