@@ -1,8 +1,7 @@
 <template>
   <div class="login-page">
     <div class="login-card">
-      <h1 class="title">第二届龙脊学社</h1>
-      <p class="subtitle">第五组活动日程 · 手账版</p>
+      <h1 class="title">第二届龙脊学社第五组</h1>
       <form @submit.prevent="submit">
         <div class="form-group">
           <label class="form-label">账号</label>
@@ -16,7 +15,6 @@
           {{ loading ? '登录中...' : '登录' }}
         </button>
       </form>
-      <p class="hint">默认管理员账号：admin / admin123456</p>
     </div>
   </div>
 </template>
@@ -26,8 +24,10 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api.js';
 import { useToast } from '../composables.js';
+import { useAuth } from '../useAuth.js';
 
 const router = useRouter();
+const auth = useAuth();
 const { show } = useToast();
 const form = reactive({ username: '', password: '' });
 const loading = ref(false);
@@ -40,8 +40,8 @@ async function submit() {
   loading.value = true;
   try {
     const res = await api.post('/login', form);
-    localStorage.setItem('token', res.data.token);
-    api.defaults.headers.common.Authorization = `Bearer ${res.data.token}`;
+    auth.setToken(res.data.token);
+    await auth.loadUser();
     show('登录成功', 'success');
     router.push('/');
   } catch (e) {

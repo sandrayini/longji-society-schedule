@@ -17,7 +17,7 @@ app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: '账号和密码必填' });
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-  if (!user || !user.active) return res.status(401).json({ error: '账号或密码错误' });
+  if (!user || !user.active) return res.status(401).json({ error: '账号或密码错误，或账号已停用' });
   if (!verifyPassword(password, user.password_hash)) return res.status(401).json({ error: '账号或密码错误' });
   const token = signToken(user);
   res.json({ token, user: { id: user.id, name: user.name, role: user.role, forcePasswordChange: !!user.force_password_change } });

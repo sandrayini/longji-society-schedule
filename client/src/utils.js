@@ -38,6 +38,15 @@ export function statusClass(a) {
   return 'status-open';
 }
 
+export function mySubmitStatus(activity, submissions, myUserId) {
+  if (!myUserId || !submissions) return 'none';
+  const s = submissions.find(x => x.userId === myUserId || x.user_id === myUserId);
+  if (activity.type === 'fixed') {
+    return s ? (s.data?.attending ? 'filled' : 'filled') : 'none';
+  }
+  return s ? 'filled' : 'none';
+}
+
 export function pad(n) { return String(n).padStart(2, '0'); }
 
 export function inputDatetimeLocal(iso) {

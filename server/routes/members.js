@@ -6,8 +6,8 @@ const { authMiddleware, adminOnly, hashPassword } = require('../auth');
 const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
-  const rows = db.prepare('SELECT id, username, name, role, position, contact, active FROM users WHERE role = ? ORDER BY created_at').all('member');
-  res.json(rows);
+  const rows = db.prepare('SELECT id, username, name, role, position, contact, active FROM users WHERE role = ? AND active = 1 ORDER BY created_at').all('member');
+  res.json(rows.map(m => ({ id: m.id, username: m.username, name: m.name, role: m.role, position: m.position, contact: m.contact, active: m.active })));
 });
 
 router.post('/', authMiddleware, adminOnly, (req, res) => {

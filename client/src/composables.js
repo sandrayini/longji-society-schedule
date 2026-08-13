@@ -39,7 +39,7 @@ export function useActivities() {
     activities.value = res.data;
   }
   onMounted(load);
-  return { activities, load };
+  return { activities, load, loadActivities: load };
 }
 
 export function useActivity(id) {
@@ -49,6 +49,8 @@ export function useActivity(id) {
     const res = await api.get(`/activities/${id}`);
     activity.value = res.data.activity;
     submissions.value = res.data.submissions;
+    // normalize data string to object
+    submissions.value.forEach(s => { if (typeof s.data === 'string') s.data = JSON.parse(s.data || '{}'); });
   }
   return { activity, submissions, load };
 }

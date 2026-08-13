@@ -37,7 +37,7 @@ export function useAuth() {
   }
 
   const isAdmin = computed(() => user.value?.role === 'admin');
-  const isLoggedIn = computed(() => !!token.value);
+  const isLoggedIn = computed(() => !!user.value);
 
   if (token.value) {
     api.defaults.headers.common.Authorization = `Bearer ${token.value}`;

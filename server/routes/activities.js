@@ -21,13 +21,30 @@ function rowToActivity(row) {
     ended: !!row.ended,
     createdBy: row.created_by,
     createdAt: row.created_at,
-    myUserId: null
+    myUserId: null,
+    submissions: []
   };
 }
 
 router.get('/', authMiddleware, (req, res) => {
-  const rows = db.prepare('SELECT * FROM activities ORDER BY created_at DESC').all();
-  res.json(rows.map(rowToActivity));
+  const activities = db.prepare('SELECT * FROM activities ORDER BY created_at DESC').all().map(rowToActivity);
+  const userId = req.user.id;
+  for (const a of activities) {
+    a.myUserId = userId;
+    const subRows = db.prepare('SELECT s.*, u.name FROM submissions s JOIN users u ON s.user_id = u.id WHERE s.activity_id = ? AND s.user_id = ?').all(a.id, userId);
+    a.submissions = subRows.map(s => ({
+      id: s.id,
+      activityId: s.activity_id,
+      userId: s.user_id,
+      name: s.name,
+      type: s.type,
+      data: JSON.parse(s.data || '{}'),
+      note: s.note,
+      createdAt: s.created_at,
+      updatedAt: s.updated_at
+    }));
+  }
+  res.json(activities);
 });
 
 router.get('/:id', authMiddleware, (req, res) => {
@@ -36,9 +53,9 @@ router.get('/:id', authMiddleware, (req, res) => {
   const activity = rowToActivity(row);
   activity.myUserId = req.user.id;
 
-  const allMembers = db.prepare('SELECT id, name, role, contact, active FROM users ORDER BY created_at').all();
-  activity.allMembers = allMembers.filter(u => u.active || u.role === 'admin').map(u => ({
-    id: u.id, name: u.name, role: u.role, contact: u.contact
+  const allMembers = db.prepare('SELECT id, name, role, contact, active, position FROM users ORDER BY created_at').all();
+  activity.allMembers = allMembers.filter(u => u.active).map(u => ({
+    id: u.id, name: u.name, role: u.role, contact: u.contact, position: u.position
   }));
 
   const subRows = db.prepare('SELECT s.*, u.name FROM submissions s JOIN users u ON s.user_id = u.id WHERE s.activity_id = ? ORDER BY s.updated_at DESC').all(req.params.id);
@@ -76,6 +93,13 @@ router.post('/:id/close', authMiddleware, adminOnly, (req, res) => {
 
 router.post('/:id/end', authMiddleware, adminOnly, (req, res) => {
   db.prepare('UPDATE activities SET ended = 1, closed = 1 WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+router.delete('/:id', authMiddleware, adminOnly, (req, res) => {
+  const activity = db.prepare('SELECT id FROM activities WHERE id = ?').get(req.params.id);
+  if (!activity) return res.status(404).json({ error: '活动不存在' });
+  db.prepare('DELETE FROM activities WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 

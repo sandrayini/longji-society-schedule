@@ -7,11 +7,11 @@
     </div>
 
     <div v-if="notSubmitted.length" class="pending-list">
-      <span class="pending-label">未提交：</span>
+      <span class="pending-label">未提交成员：</span>
       <span v-for="m in notSubmitted" :key="m.id" class="pending-name">{{ m.name }}</span>
     </div>
 
-    <div v-if="submissions.length===0" class="empty">暂无提交</div>
+    <div v-if="submissions.length===0 && notSubmitted.length===0" class="empty">暂无提交</div>
     <div v-for="s in submissions" :key="s.id" class="submission-row">
       <div class="badge" :style="{background: colorOf(s.userId)}">{{ initial(s.name) }}</div>
       <div class="info">
