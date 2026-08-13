@@ -19,6 +19,7 @@ function initSchema() {
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('admin','member')),
+      position TEXT,
       contact TEXT,
       active INTEGER DEFAULT 1,
       force_password_change INTEGER DEFAULT 0,
@@ -68,6 +69,14 @@ function initSchema() {
   }
 }
 
+function migrateSchema() {
+  const hasPosition = db.prepare("SELECT 1 FROM pragma_table_info('users') WHERE name = 'position'").get();
+  if (!hasPosition) {
+    db.prepare('ALTER TABLE users ADD COLUMN position TEXT').run();
+  }
+}
+
 initSchema();
+migrateSchema();
 
 module.exports = db;

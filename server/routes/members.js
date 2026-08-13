@@ -6,30 +6,30 @@ const { authMiddleware, adminOnly, hashPassword } = require('../auth');
 const router = express.Router();
 
 router.get('/', authMiddleware, async (req, res) => {
-  const rows = db.prepare('SELECT id, username, name, role, contact, active FROM users WHERE role = ? ORDER BY created_at').all('member');
+  const rows = db.prepare('SELECT id, username, name, role, position, contact, active FROM users WHERE role = ? ORDER BY created_at').all('member');
   res.json(rows);
 });
 
 router.post('/', authMiddleware, adminOnly, (req, res) => {
-  const { username, password = 'longji123', name, role = 'member', contact = '', active = 1 } = req.body;
+  const { username, password = 'longji123', name, role = 'member', position = '', contact = '', active = 1 } = req.body;
   if (!username || !name) return res.status(400).json({ error: '账号和姓名必填' });
   const validRole = role === 'admin' ? 'admin' : 'member';
   const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
   if (exists) return res.status(400).json({ error: '账号已存在' });
   const id = crypto.randomUUID();
   const hash = hashPassword(password);
-  db.prepare(`INSERT INTO users (id, username, password_hash, name, role, contact, active, force_password_change, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(id, username, hash, name, validRole, contact, active ? 1 : 0, 1, new Date().toISOString());
+  db.prepare(`INSERT INTO users (id, username, password_hash, name, role, position, contact, active, force_password_change, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(id, username, hash, name, validRole, position || '', contact || '', active ? 1 : 0, 1, new Date().toISOString());
   res.json({ id });
 });
 
 router.put('/:id', authMiddleware, adminOnly, (req, res) => {
-  const { name, role, contact, active } = req.body;
+  const { name, position, contact, active } = req.body;
   const member = db.prepare('SELECT id FROM users WHERE id = ?').get(req.params.id);
   if (!member) return res.status(404).json({ error: '成员不存在' });
-  db.prepare('UPDATE users SET name = ?, role = ?, contact = ?, active = ? WHERE id = ?')
-    .run(name, role || 'member', contact || '', active ? 1 : 0, req.params.id);
+  db.prepare('UPDATE users SET name = ?, position = ?, contact = ?, active = ? WHERE id = ?')
+    .run(name, position || '', contact || '', active ? 1 : 0, req.params.id);
   res.json({ ok: true });
 });
 

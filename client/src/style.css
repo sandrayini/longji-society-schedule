@@ -11,8 +11,8 @@
   --accent-brown: #9C8570;
   --shadow: 0 8px 28px rgba(156,133,112,0.12);
   --radius: 24px;
-  --font-serif: 'Noto Serif SC', serif;
-  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', 'SimSun', serif;
+  --font-sans: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * { box-sizing: border-box; }

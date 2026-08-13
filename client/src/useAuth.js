@@ -12,11 +12,13 @@ export function useAuth() {
     try {
       const res = await api.get('/me');
       user.value = res.data;
-      if (user.value.forcePasswordChange) {
+      if (user.value.forcePasswordChange && router.currentRoute.value.path !== '/profile') {
         router.push('/profile');
       }
     } catch (e) {
-      logout();
+      if (e.response?.status === 401) {
+        logout();
+      }
     }
   }
 

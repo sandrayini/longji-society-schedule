@@ -9,7 +9,8 @@ api.interceptors.response.use(
   err => {
     if (err.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      const evt = new CustomEvent('unauthorized', { detail: err.response?.data?.error || '登录已过期' });
+      window.dispatchEvent(evt);
     }
     return Promise.reject(err);
   }

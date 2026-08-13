@@ -13,7 +13,7 @@
         <div v-for="m in members" :key="m.id" class="member-chip">
           <div class="badge" :style="{background: colorOf(m.id)}">{{ initial(m.name) }}</div>
           <span class="member-name">{{ m.name }}</span>
-          <span class="member-role">{{ m.role || '成员' }}</span>
+          <span class="member-role">{{ (m.position || m.role) || '成员' }}</span>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@
       <div v-for="m in members" :key="m.id" class="member-row">
         <div class="badge" :style="{background: colorOf(m.id)}">{{ initial(m.name) }}</div>
         <div class="info">
-          <div class="name">{{ m.name }} <span class="role">{{ m.role || '成员' }}</span></div>
+          <div class="name">{{ m.name }} <span class="role">{{ (m.position || m.role) || '成员' }}</span></div>
           <div class="contact">{{ m.contact || '暂无联系方式' }}</div>
         </div>
       </div>
