@@ -1,9 +1,9 @@
 <template>
   <div class="page">
     <h1 class="page-title">第二届龙脊学社第五组</h1>
-    <p class="page-subtitle">成员及活动列表</p>
+    <p v-if="myRole === 'admin'" class="page-subtitle">成员及活动列表</p>
 
-    <div class="card">
+    <div v-if="myRole === 'admin'" class="card">
       <div class="card-title">
         <div class="card-icon" style="background:#F0937E">👥</div>
         成员列表
