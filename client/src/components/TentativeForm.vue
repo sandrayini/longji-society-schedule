@@ -44,7 +44,7 @@ const intervals = ref([]);
 const mySubmission = computed(() => props.submissions.find(s => s.userId === props.activity.myUserId));
 
 if (mySubmission.value) {
-  const data = JSON.parse(mySubmission.value.data || '{}');
+  const data = mySubmission.value.data || {};
   note.value = data.note || '';
   intervals.value = (data.freeIntervals || []).map(iv => ({ start: inputDatetimeLocal(iv.start), end: inputDatetimeLocal(iv.end) }));
   if (!intervals.value.length && (data.busyIntervals || []).length) {

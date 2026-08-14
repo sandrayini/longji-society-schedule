@@ -76,7 +76,7 @@ const visibleMembers = computed(() => {
   if (myRole.value === 'admin') return members.value;
   return members.value.filter(m => m.active === 1);
 });
-const activitiesWithStatus = computed(() => activities.value.map(a => ({ ...a, filled: mySubmitStatus(a, a.submissions, myUserId.value) })));
+const activitiesWithStatus = computed(() => activities.value.map(a => ({ ...a, filled: a.filled || mySubmitStatus(a, a.submissions, myUserId.value) })));
 
 function openActivityEditor() { showActivityEditor.value = true; }
 function go(a) { router.push(`/activity/${a.id}`); }

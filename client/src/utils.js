@@ -39,16 +39,16 @@ export function statusClass(a) {
 }
 
 export function mySubmitStatus(activity, submissions, myUserId) {
-  if (!myUserId || !submissions) return 'none';
+  if (!myUserId || !Array.isArray(submissions)) return false;
   const s = submissions.find(x => x.userId === myUserId || x.user_id === myUserId);
-  if (!s) return 'none';
-  if (activity.type === 'fixed') {
-    return typeof s.data?.attending === 'boolean' ? 'filled' : 'none';
-  }
+  if (!s) return false;
   const d = s.data || {};
+  if (activity.type === 'fixed') {
+    return typeof d.attending === 'boolean';
+  }
   const hasFree = Array.isArray(d.freeIntervals) && d.freeIntervals.length > 0;
   const hasBusy = Array.isArray(d.busyIntervals) && d.busyIntervals.length > 0;
-  return hasFree || hasBusy ? 'filled' : 'none';
+  return hasFree || hasBusy;
 }
 
 export function pad(n) { return String(n).padStart(2, '0'); }

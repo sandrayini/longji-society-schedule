@@ -29,8 +29,8 @@ const note = ref('');
 const mySubmission = computed(() => props.submissions.find(s => s.userId === props.activity.myUserId));
 
 if (mySubmission.value) {
-  const data = JSON.parse(mySubmission.value.data || '{}');
-  attending.value = data.attending ? 'yes' : 'no';
+  const data = mySubmission.value.data || {};
+  attending.value = typeof data.attending === 'boolean' ? (data.attending ? 'yes' : 'no') : 'yes';
   note.value = data.note || '';
 }
 

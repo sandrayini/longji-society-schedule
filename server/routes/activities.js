@@ -22,8 +22,20 @@ function rowToActivity(row) {
     createdBy: row.created_by,
     createdAt: row.created_at,
     myUserId: null,
+    filled: false,
     submissions: []
   };
+}
+
+function computeFilled(activity, submission) {
+  if (!submission) return false;
+  const d = submission.data || {};
+  if (activity.type === 'fixed') {
+    return typeof d.attending === 'boolean';
+  }
+  const free = Array.isArray(d.freeIntervals) ? d.freeIntervals : [];
+  const busy = Array.isArray(d.busyIntervals) ? d.busyIntervals : [];
+  return free.length > 0 || busy.length > 0;
 }
 
 router.get('/', authMiddleware, (req, res) => {
@@ -43,6 +55,9 @@ router.get('/', authMiddleware, (req, res) => {
       createdAt: s.created_at,
       updatedAt: s.updated_at
     }));
+    a.filled = computeFilled(a, a.submissions[0]);
+    // 为减小列表接口体积，当前登录人未提交时不返回 submissions 明细
+    if (!a.filled) a.submissions = [];
   }
   res.json(activities);
 });
