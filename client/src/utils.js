@@ -51,6 +51,45 @@ export function mySubmitStatus(activity, submissions, myUserId) {
   return hasFree || hasBusy;
 }
 
+export function formatActivityTime(a) {
+  if (a.type === 'tentative') {
+    return formatInterval('统计区间', a.rangeStart, a.rangeEnd);
+  }
+  return formatInterval('活动时间', a.fixedStart, a.fixedEnd);
+}
+
+function formatInterval(label, startIso, endIso) {
+  if (!startIso || !endIso) return '';
+  const start = parseShanghaiParts(startIso);
+  const end = parseShanghaiParts(endIso);
+  if (!start || !end) return '';
+  const sameDay = start.Y === end.Y && start.M === end.M && start.D === end.D;
+  const startStr = `${start.Y}年${start.M}月${start.D}日 ${start.h}:${start.m}`;
+  if (sameDay) {
+    return `${label}：${startStr} 至 ${end.h}:${end.m}`;
+  }
+  return `${label}：${startStr} 至 ${end.Y}年${end.M}月${end.D}日 ${end.h}:${end.m}`;
+}
+
+function parseShanghaiParts(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  const fmt = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  });
+  const parts = fmt.formatToParts(d);
+  const get = type => parts.find(p => p.type === type)?.value;
+  return {
+    Y: get('year'),
+    M: get('month'),
+    D: get('day'),
+    h: get('hour'),
+    m: get('minute')
+  };
+}
+
 export function pad(n) { return String(n).padStart(2, '0'); }
 
 export function inputDatetimeLocal(iso) {

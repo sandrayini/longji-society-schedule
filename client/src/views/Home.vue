@@ -31,13 +31,14 @@
         <div class="activity-meta">
           <span class="tag" :style="{background: a.type==='tentative' ? '#8FAECC':'#7BAE7F'}">{{ a.type==='tentative' ? '时间待定':'时间已定' }}</span>
           <span class="status tag" :class="statusClass(a)">{{ statusText(a) }}</span>
-          <span class="my-status" :class="a.filled ? 'filled':'unfilled'">{{ a.filled ? '已填':'未填' }}</span>
+          <span v-if="myRole !== 'admin'" class="my-status" :class="a.filled ? 'filled':'unfilled'">{{ a.filled ? '已填':'未填' }}</span>
         </div>
         <div class="activity-title-row">
           <h3 class="activity-title">{{ a.title }}</h3>
           <button v-if="auth.isAdmin.value" class="delete-btn" @click.stop="confirmDelete(a)">删除</button>
         </div>
         <p class="activity-desc">{{ a.description || '暂无内容' }}</p>
+        <p v-if="formatActivityTime(a)" class="activity-schedule">{{ formatActivityTime(a) }}</p>
         <p class="activity-time">发起于 {{ formatTime(a.createdAt) }}</p>
       </div>
       <ConfirmModal v-if="deleteTarget" title="确认删除" @confirm="doDelete" @cancel="deleteTarget=null">
@@ -56,7 +57,7 @@ import { inject, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api.js';
 import { useMembers, useActivities, useToast } from '../composables.js';
-import { colorOf, initial, formatTime, statusText, statusClass, mySubmitStatus } from '../utils.js';
+import { colorOf, initial, formatTime, formatActivityTime, statusText, statusClass, mySubmitStatus } from '../utils.js';
 import MemberEditor from '../components/MemberEditor.vue';
 import ActivityEditor from '../components/ActivityEditor.vue';
 import ConfirmModal from '../components/ConfirmModal.vue';
@@ -131,5 +132,8 @@ async function doDelete() {
 .my-status.filled { background: #E6F4E8; color: #4E8A5A; }
 .my-status.unfilled { background: #FFF0E6; color: #C87D5A; }
 .activity-desc { font-size: 13px; color: var(--text-light); margin: 0 0 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.activity-time { font-size: 11px; color: #b8a99a; margin: 0; }
+.activity-time { font-size: 11px; color: #b8a99a; margin: 0; display: flex; align-items: center; gap: 4px; }
+.activity-schedule { font-size: 12px; color: #a39b92; margin: 0 0 8px; display: flex; align-items: center; gap: 4px; }
+.activity-schedule::before { content: '🗓️'; font-size: 11px; }
+.activity-time::before { content: '🕐'; font-size: 10px; }
 </style>
