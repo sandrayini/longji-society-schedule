@@ -28,7 +28,7 @@ function initSchema() {
 
     CREATE TABLE IF NOT EXISTS activities (
       id TEXT PRIMARY KEY,
-      type TEXT NOT NULL CHECK(type IN ('tentative','fixed')),
+      type TEXT NOT NULL CHECK(type IN ('tentative','fixed','vote')),
       title TEXT NOT NULL,
       description TEXT,
       range_start TEXT,
@@ -74,6 +74,10 @@ function migrateSchema() {
   if (!hasPosition) {
     db.prepare('ALTER TABLE users ADD COLUMN position TEXT').run();
   }
+  // 扩展 vote 类型
+  try {
+    db.prepare("ALTER TABLE activities ADD COLUMN data TEXT").run();
+  } catch (e) { /* 已存在则忽略 */ }
 }
 
 initSchema();

@@ -29,7 +29,7 @@
       <div v-if="activitiesWithStatus.length===0" class="empty">暂无活动</div>
       <div v-for="a in activitiesWithStatus" :key="a.id" class="activity-item" @click="go(a)">
         <div class="activity-meta">
-          <span class="tag" :style="{background: a.type==='tentative' ? '#8FAECC':'#7BAE7F'}">{{ a.type==='tentative' ? '时间待定':'时间已定' }}</span>
+          <span class="tag" :style="{background: typeColor(a)}">{{ typeLabel(a) }}</span>
           <span class="status tag" :class="statusClass(a)">{{ statusText(a) }}</span>
           <span v-if="myRole !== 'admin'" class="my-status" :class="a.filled ? 'filled':'unfilled'">{{ a.filled ? '已填':'未填' }}</span>
         </div>
@@ -79,6 +79,18 @@ const visibleMembers = computed(() => {
 });
 const activitiesWithStatus = computed(() => activities.value.map(a => ({ ...a, filled: a.filled || mySubmitStatus(a, a.submissions, myUserId.value) })));
 
+function typeLabel(a) {
+  if (a.type === 'tentative') return '时间待定';
+  if (a.type === 'fixed') return '时间已定';
+  if (a.type === 'vote') return '投票';
+  return a.type;
+}
+function typeColor(a) {
+  if (a.type === 'tentative') return '#8FAECC';
+  if (a.type === 'fixed') return '#7BAE7F';
+  if (a.type === 'vote') return '#F4A6C3';
+  return '#9C8570';
+}
 function openActivityEditor() { showActivityEditor.value = true; }
 function go(a) { router.push(`/activity/${a.id}`); }
 function confirmDelete(a) { deleteTarget.value = a; }

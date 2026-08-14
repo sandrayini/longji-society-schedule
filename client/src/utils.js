@@ -46,6 +46,9 @@ export function mySubmitStatus(activity, submissions, myUserId) {
   if (activity.type === 'fixed') {
     return typeof d.attending === 'boolean';
   }
+  if (activity.type === 'vote') {
+    return Array.isArray(d.selected) && d.selected.length > 0;
+  }
   const hasFree = Array.isArray(d.freeIntervals) && d.freeIntervals.length > 0;
   const hasBusy = Array.isArray(d.busyIntervals) && d.busyIntervals.length > 0;
   return hasFree || hasBusy;
@@ -88,6 +91,19 @@ function parseShanghaiParts(iso) {
     h: get('hour'),
     m: get('minute')
   };
+}
+
+export function typeLabel(a) {
+  if (a.type === 'tentative') return '时间待定';
+  if (a.type === 'fixed') return '时间已定';
+  if (a.type === 'vote') return '投票';
+  return a.type;
+}
+export function typeColor(a) {
+  if (a.type === 'tentative') return '#8FAECC';
+  if (a.type === 'fixed') return '#7BAE7F';
+  if (a.type === 'vote') return '#F4A6C3';
+  return '#9C8570';
 }
 
 export function pad(n) { return String(n).padStart(2, '0'); }

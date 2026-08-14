@@ -6,8 +6,12 @@ const { computeCommonFree } = require('../../shared/intervals');
 
 const router = express.Router();
 
+function parseJSON(s) {
+  try { return JSON.parse(s || '{}'); } catch (e) { return {}; }
+}
+
 function rowToActivity(row) {
-  return {
+  const base = {
     id: row.id,
     type: row.type,
     title: row.title,
@@ -25,6 +29,13 @@ function rowToActivity(row) {
     filled: false,
     submissions: []
   };
+  if (row.type === 'vote') {
+    const data = parseJSON(row.data);
+    base.options = Array.isArray(data.options) ? data.options : [];
+    base.allowMultiple = !!data.allowMultiple;
+    base.anonymous = !!data.anonymous;
+  }
+  return base;
 }
 
 function computeFilled(activity, submission) {
@@ -32,6 +43,9 @@ function computeFilled(activity, submission) {
   const d = submission.data || {};
   if (activity.type === 'fixed') {
     return typeof d.attending === 'boolean';
+  }
+  if (activity.type === 'vote') {
+    return Array.isArray(d.selected) && d.selected.length > 0;
   }
   const free = Array.isArray(d.freeIntervals) ? d.freeIntervals : [];
   const busy = Array.isArray(d.busyIntervals) ? d.busyIntervals : [];
@@ -87,18 +101,65 @@ router.get('/:id', authMiddleware, (req, res) => {
     updatedAt: s.updated_at
   }));
 
+  if (activity.type === 'vote') {
+    const optionCounts = {};
+    const optionVoters = {};
+    activity.options.forEach(opt => {
+      optionCounts[opt.id] = 0;
+      optionVoters[opt.id] = [];
+    });
+    let votedCount = 0;
+    for (const s of submissions) {
+      const d = s.data || {};
+      const selected = Array.isArray(d.selected) ? d.selected : [];
+      if (selected.length > 0) votedCount++;
+      for (const optId of selected) {
+        if (optionCounts[optId] !== undefined) {
+          optionCounts[optId]++;
+          if (!activity.anonymous) optionVoters[optId].push({ userId: s.userId, name: s.name });
+        }
+      }
+    }
+    activity.voteStats = {
+      total: activity.allMembers.length,
+      voted: votedCount,
+      notVoted: activity.allMembers.filter(m => !submissions.some(s => s.userId === m.id)).map(m => ({ id: m.id, name: m.name })),
+      options: activity.options.map(opt => ({
+        id: opt.id,
+        text: opt.text,
+        count: optionCounts[opt.id] || 0,
+        voters: activity.anonymous ? [] : optionVoters[opt.id]
+      }))
+    };
+    activity.filled = computeFilled(activity, submissions.find(s => s.userId === req.user.id));
+  }
+
   res.json({ activity, submissions });
 });
 
 router.post('/', authMiddleware, adminOnly, (req, res) => {
-  const { type, title, description, rangeStart, rangeEnd, fixedStart, fixedEnd, deadline } = req.body;
+  const { type, title, description, rangeStart, rangeEnd, fixedStart, fixedEnd, deadline, options, allowMultiple, anonymous } = req.body;
   if (!type || !title) return res.status(400).json({ error: '类型和标题必填' });
   if (type === 'tentative' && (!rangeStart || !rangeEnd)) return res.status(400).json({ error: '时间待定活动需填写统计时间段' });
   if (type === 'fixed' && (!fixedStart || !fixedEnd)) return res.status(400).json({ error: '时间已定活动需填写活动时间' });
+  if (type === 'vote') {
+    if (!Array.isArray(options) || options.length < 2) return res.status(400).json({ error: '投票活动至少需要 2 个选项' });
+    const texts = options.map(o => o?.text?.trim()).filter(Boolean);
+    if (texts.length < 2) return res.status(400).json({ error: '每个选项文字必填' });
+    if (new Set(texts).size !== texts.length) return res.status(400).json({ error: '选项文字不能重复' });
+  }
   const id = crypto.randomUUID();
-  db.prepare(`INSERT INTO activities (id, type, title, description, range_start, range_end, fixed_start, fixed_end, deadline, closed, ended, created_by, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`)
-    .run(id, type, title, description || '', rangeStart || null, rangeEnd || null, fixedStart || null, fixedEnd || null, deadline || null, req.user.id, new Date().toISOString());
+  let activityData = null;
+  if (type === 'vote') {
+    activityData = JSON.stringify({
+      options: options.map((o, idx) => ({ id: crypto.randomUUID(), text: String(o.text).trim() })),
+      allowMultiple: !!allowMultiple,
+      anonymous: !!anonymous
+    });
+  }
+  db.prepare(`INSERT INTO activities (id, type, title, description, range_start, range_end, fixed_start, fixed_end, deadline, closed, ended, created_by, created_at, data)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)`)
+    .run(id, type, title, description || '', rangeStart || null, rangeEnd || null, fixedStart || null, fixedEnd || null, deadline || null, req.user.id, new Date().toISOString(), activityData);
   res.json({ id });
 });
 
@@ -132,6 +193,17 @@ router.post('/:id/submit', authMiddleware, (req, res) => {
 
   const { type, data, note } = req.body;
   if (type !== activity.type) return res.status(400).json({ error: '提交类型与活动类型不符' });
+
+  if (activity.type === 'vote') {
+    const activityData = parseJSON(activity.data);
+    const options = Array.isArray(activityData.options) ? activityData.options : [];
+    const allowMultiple = !!activityData.allowMultiple;
+    const selected = Array.isArray(data?.selected) ? data.selected : [];
+    if (selected.length === 0) return res.status(400).json({ error: '请至少选择一个选项' });
+    if (!allowMultiple && selected.length > 1) return res.status(400).json({ error: '该投票为单选' });
+    const validIds = new Set(options.map(o => o.id));
+    if (!selected.every(id => validIds.has(id))) return res.status(400).json({ error: '包含无效选项' });
+  }
 
   const existing = db.prepare('SELECT id FROM submissions WHERE activity_id = ? AND user_id = ?').get(req.params.id, req.user.id);
   const id = existing ? existing.id : crypto.randomUUID();
