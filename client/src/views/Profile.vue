@@ -1,7 +1,7 @@
 <template>
   <div class="page">
-    <h1 class="page-title">我的</h1>
-    <p class="page-subtitle">第五组 · 个人设置</p>
+    <h1 class="page-title">第二届龙脊学社第五组</h1>
+    <p class="page-subtitle">个人设置</p>
 
     <div class="card">
       <div class="user-card">

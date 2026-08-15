@@ -164,11 +164,25 @@ router.post('/', authMiddleware, adminOnly, (req, res) => {
 });
 
 router.post('/:id/close', authMiddleware, adminOnly, (req, res) => {
+  const activity = db.prepare('SELECT closed, ended FROM activities WHERE id = ?').get(req.params.id);
+  if (!activity) return res.status(404).json({ error: '活动不存在' });
+  if (activity.ended) return res.status(400).json({ error: '活动已结束，无法截止' });
   db.prepare('UPDATE activities SET closed = 1 WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
 
+router.post('/:id/reopen', authMiddleware, adminOnly, (req, res) => {
+  const activity = db.prepare('SELECT closed, ended FROM activities WHERE id = ?').get(req.params.id);
+  if (!activity) return res.status(404).json({ error: '活动不存在' });
+  if (activity.ended) return res.status(400).json({ error: '活动已结束，无法重新开启' });
+  db.prepare('UPDATE activities SET closed = 0 WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+
 router.post('/:id/end', authMiddleware, adminOnly, (req, res) => {
+  const activity = db.prepare('SELECT closed, ended FROM activities WHERE id = ?').get(req.params.id);
+  if (!activity) return res.status(404).json({ error: '活动不存在' });
+  if (activity.ended) return res.status(400).json({ error: '活动已结束' });
   db.prepare('UPDATE activities SET ended = 1, closed = 1 WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });

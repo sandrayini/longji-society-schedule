@@ -1,7 +1,7 @@
 <template>
   <div class="page">
-    <h1 class="page-title">成员</h1>
-    <p class="page-subtitle">第五组 · 成员一览</p>
+    <h1 class="page-title">第二届龙脊学社第五组</h1>
+    <p class="page-subtitle">成员一览</p>
     <div class="card">
       <div v-for="m in visibleMembers" :key="m.id" class="member-row" :class="{ inactive: m.active === 0 }">
         <div class="badge" :style="{background: colorOf(m.id)}">{{ initial(m.name) }}</div>

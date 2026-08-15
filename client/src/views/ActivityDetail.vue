@@ -52,16 +52,14 @@
         <SubmissionList :activity="activity" :submissions="submissions" />
       </div>
 
-      <div class="admin-actions" v-if="auth.isAdmin.value && !isClosed && !activity.ended">
-        <button v-if="activity.type==='vote'" class="btn btn-secondary" style="flex:1" @click="close">截止投票</button>
-        <button v-if="activity.type!=='vote'" class="btn btn-secondary" style="flex:1" @click="close">截止征集</button>
+      <div class="admin-actions" v-if="auth.isAdmin.value && !activity.ended">
+        <button v-if="!isClosed" class="btn btn-secondary" style="flex:1" @click="close">{{ closeBtnText }}</button>
+        <button v-if="isClosed" class="btn btn-secondary" style="flex:1" @click="reopen">重新开启</button>
         <button v-if="activity.type!=='vote'" class="btn btn-danger" style="flex:1" @click="end">结束活动</button>
+        <button v-if="activity.type==='vote' && isClosed" class="btn btn-danger" style="flex:1" @click="deleteVote">删除投票</button>
       </div>
-      <div class="admin-actions" v-if="auth.isAdmin.value && activity.type==='vote' && isClosed && !activity.ended">
-        <button class="btn btn-danger" style="width:100%" @click="deleteVote">删除投票</button>
-      </div>
-      <div v-if="isClosed && !activity.ended && activity.type!=='vote'" class="closed-hint">该活动已截止征集，但仍可查看统计结果。</div>
-      <div v-if="activity.ended" class="closed-hint">该活动已结束。</div>
+      <div v-if="isClosed && !activity.ended" class="closed-hint">该{{ activity.type==='vote'?'投票':'活动' }}已截止，但仍可查看统计结果。</div>
+      <div v-if="activity.ended" class="closed-hint">该{{ activity.type==='vote'?'投票':'活动' }}已结束。</div>
     </div>
   </div>
 </template>
@@ -90,10 +88,19 @@ const isClosed = computed(() => {
   if (activity.value?.deadline && new Date() > new Date(activity.value.deadline)) return true;
   return false;
 });
+const closeBtnText = computed(() => {
+  if (activity.value?.type === 'vote') return '截止投票';
+  return '截止征集';
+});
 
 async function close() {
   await api.post(`/activities/${route.params.id}/close`);
   show('已截止', 'success');
+  load();
+}
+async function reopen() {
+  await api.post(`/activities/${route.params.id}/reopen`);
+  show('已重新开启', 'success');
   load();
 }
 async function end() {

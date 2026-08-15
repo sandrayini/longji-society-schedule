@@ -26,16 +26,18 @@ export function formatTime(iso) {
 
 export function statusText(a) {
   if (a.ended) return '已结束';
-  if (a.deadline && new Date() > new Date(a.deadline)) return '已截止';
-  if (a.closed) return '已截止';
+  if (isClosed(a)) return '已截止';
   return '征集中';
 }
-
 export function statusClass(a) {
   if (a.ended) return 'status-ended';
-  if (a.deadline && new Date() > new Date(a.deadline)) return 'status-closed';
-  if (a.closed) return 'status-closed';
+  if (isClosed(a)) return 'status-closed';
   return 'status-open';
+}
+function isClosed(a) {
+  if (a.closed) return true;
+  if (a.deadline && new Date() > new Date(a.deadline)) return true;
+  return false;
 }
 
 export function mySubmitStatus(activity, submissions, myUserId) {

@@ -2,6 +2,7 @@
   <div class="page">
     <h1 class="page-title">第二届龙脊学社第五组</h1>
     <p v-if="myRole === 'admin'" class="page-subtitle">成员及活动列表</p>
+    <div v-else class="title-spacer"></div>
 
     <div v-if="myRole === 'admin'" class="card">
       <div class="card-title">
@@ -126,6 +127,7 @@ async function doDelete() {
 .member-chip.inactive .badge { opacity: 0.45; filter: grayscale(0.6); }
 .member-chip.inactive .member-name { color: #a39b92; }
 .inactive-tag { font-size: 10px; color: #fff; background: #c8bdb0; border-radius: 999px; padding: 2px 6px; margin-top: 4px; }
+.title-spacer { height: 18px; }
 
 .activity-item {
   background: #FFFCF7;
