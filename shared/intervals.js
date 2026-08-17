@@ -210,7 +210,7 @@ function mergeAdjacentSameCount(slots) {
 
 function topAvailableSlots(range, members, topN = 5) {
   const rangeDays = (range.end - range.start) / MS_DAY;
-  const slotMs = rangeDays > 2 ? MS_HOUR : 30 * MS_MIN;
+  const slotMs = rangeDays > 1 ? MS_HOUR : 30 * MS_MIN;
   const counts = countAvailablePerSlot(range, members, slotMs);
   const merged = mergeAdjacentSameCount(counts);
   return merged

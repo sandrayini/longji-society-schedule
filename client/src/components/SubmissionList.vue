@@ -18,10 +18,10 @@
         <div class="name">{{ s.name }} <span class="time">{{ formatTime(s.updatedAt) }}</span></div>
         <div v-if="activity.type==='tentative'" class="detail">
           <div v-if="freeTexts(s).length">
-            <span style="color:#7BAE7F">有空</span>：{{ freeTexts(s).join('；') }}；
+            <span style="color:#7BAE7F">有空</span>：{{ freeTexts(s).join('；') }}
           </div>
           <div v-if="busyTexts(s).length">
-            <span style="color:#EFA8B8">没空</span>：{{ busyTexts(s).join('；') }}；
+            <span style="color:#EFA8B8">没空</span>：{{ busyTexts(s).join('；') }}
           </div>
           <div v-if="s.data.note" class="note">备注：{{ s.data.note }}</div>
         </div>

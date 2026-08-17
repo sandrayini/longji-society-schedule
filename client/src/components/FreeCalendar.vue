@@ -77,7 +77,7 @@ const range = computed(() => {
 const slotMs = computed(() => {
   if (!range.value.start || !range.value.end) return SLOT_MS;
   const days = (range.value.end - range.value.start) / (24 * 60 * 60 * 1000);
-  return days > 2 ? MS_HOUR : SLOT_MS;
+  return days > 1 ? MS_HOUR : SLOT_MS;
 });
 
 const columns = computed(() => {
