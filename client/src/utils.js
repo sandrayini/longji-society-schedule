@@ -130,11 +130,15 @@ export function nowLocalInput() {
 // 把 ISO 或 'YYYY-MM-DDTHH:mm' 解析为 Asia/Shanghai 的毫秒时间戳
 // 历史数据可能混用两种格式，统一按上海时区解释，避免偏移 8 小时
 export function parseShanghaiMs(iso) {
-  if (!iso) return null;
+  if (iso == null) return null;
+  if (typeof iso === 'number') return iso;
   const str = String(iso);
+  // 数字字符串直接转毫秒
+  if (/^-?\d+$/.test(str.trim())) return Number(str.trim());
   // 带 Z 或显式时区偏移：已是绝对时刻，直接取 UTC 毫秒
   if (/Z$|\.\d+Z?$/.test(str) || /[+-]\d{2}:\d{2}$/.test(str)) {
-    return d.getTime();
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d.getTime();
   }
   // 无后缀的 YYYY-MM-DDTHH:mm 视为 Asia/Shanghai 的本地时间
   const [date, time] = str.split('T');
@@ -146,7 +150,8 @@ export function parseShanghaiMs(iso) {
 
 // 返回 Asia/Shanghai 下格式化字符串
 export function formatShanghai(iso, { showDate = true, showTime = true } = {}) {
-  const d = new Date(parseShanghaiMs(iso) || iso);
+  const ms = parseShanghaiMs(iso);
+  const d = ms != null ? new Date(ms) : new Date(iso);
   if (isNaN(d.getTime())) return '';
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -160,7 +165,8 @@ export function formatShanghai(iso, { showDate = true, showTime = true } = {}) {
 }
 
 export function shanghaiDateKey(iso) {
-  const d = new Date(parseShanghaiMs(iso) || iso);
+  const ms = parseShanghaiMs(iso);
+  const d = ms != null ? new Date(ms) : new Date(iso);
   if (isNaN(d.getTime())) return '';
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: 'Asia/Shanghai',
@@ -174,7 +180,7 @@ export function shanghaiStartOfDay(iso) {
   const ms = parseShanghaiMs(iso);
   if (ms == null) return null;
   const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
+  d.setUTCHours(0, 0, 0, 0);
   return d.getTime();
 }
 
@@ -186,6 +192,6 @@ export function shanghaiEndOfDay(iso) {
   const ms = parseShanghaiMs(iso);
   if (ms == null) return null;
   const d = new Date(ms);
-  d.setHours(23, 59, 59, 999);
+  d.setUTCHours(23, 59, 59, 999);
   return d.getTime();
 }

@@ -5,6 +5,7 @@ function parseTime(v) {
   if (/^-?\d+$/.test(v.trim())) return Number(v.trim());
   const str = String(v);
   const d = new Date(str);
+  if (isNaN(d.getTime())) return null;
   // 带 Z 或显式时区偏移：已是绝对时刻，直接取 UTC 毫秒
   if (/Z$|\.\d+Z?$/.test(str) || /[+-]\d{2}:\d{2}$/.test(str)) {
     return d.getTime();

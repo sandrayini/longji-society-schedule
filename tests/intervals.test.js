@@ -107,6 +107,44 @@ describe('memberFreeIntervals', () => {
   });
 });
 
+describe('parseShanghaiMs', () => {
+  const parseShanghaiMs = (iso) => {
+    if (iso == null) return null;
+    if (typeof iso === 'number') return iso;
+    const str = String(iso);
+    if (/^-?\d+$/.test(str.trim())) return Number(str.trim());
+    if (/Z$|\.\d+Z?$/.test(str) || /[+-]\d{2}:\d{2}$/.test(str)) {
+      const d = new Date(str);
+      return isNaN(d.getTime()) ? null : d.getTime();
+    }
+    const [date, time] = str.split('T');
+    if (!date || !time) return null;
+    const [y, mo, da] = date.split('-').map(Number);
+    const [h, m] = (time || '00:00').split(':').map(Number);
+    return Date.UTC(y, mo - 1, da, h - 8, m, 0);
+  };
+
+  test('parses .000Z UTC string without shift', () => {
+    expect(parseShanghaiMs('2026-08-22T01:00:00.000Z')).toBe(Date.UTC(2026, 7, 22, 1, 0, 0));
+  });
+
+  test('parses plain string as Asia/Shanghai local', () => {
+    expect(parseShanghaiMs('2026-08-22T09:00')).toBe(Date.UTC(2026, 7, 22, 1, 0, 0));
+  });
+
+  test('accepts numeric milliseconds', () => {
+    const ms = Date.UTC(2026, 7, 22, 1, 0, 0);
+    expect(parseShanghaiMs(ms)).toBe(ms);
+    expect(parseShanghaiMs(String(ms))).toBe(ms);
+  });
+
+  test('returns null for invalid or empty input', () => {
+    expect(parseShanghaiMs(null)).toBe(null);
+    expect(parseShanghaiMs('')).toBe(null);
+    expect(parseShanghaiMs('not-a-date')).toBe(null);
+  });
+});
+
 describe('computeCommonFree', () => {
   const fullRange = { start: '2026-08-20T08:00', end: '2026-08-20T20:00' };
 
