@@ -126,3 +126,66 @@ export function nowLocalInput() {
   const d = new Date();
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+// 把 ISO 或 'YYYY-MM-DDTHH:mm' 解析为 Asia/Shanghai 的毫秒时间戳
+// 历史数据可能混用两种格式，统一按上海时区解释，避免偏移 8 小时
+export function parseShanghaiMs(iso) {
+  if (!iso) return null;
+  const str = String(iso);
+  // 带 Z 或显式时区偏移：已是绝对时刻，直接取 UTC 毫秒
+  if (/Z$|\.\d+Z?$/.test(str) || /[+-]\d{2}:\d{2}$/.test(str)) {
+    return d.getTime();
+  }
+  // 无后缀的 YYYY-MM-DDTHH:mm 视为 Asia/Shanghai 的本地时间
+  const [date, time] = str.split('T');
+  if (!date || !time) return null;
+  const [y, mo, da] = date.split('-').map(Number);
+  const [h, m] = (time || '00:00').split(':').map(Number);
+  return Date.UTC(y, mo - 1, da, h - 8, m, 0);
+}
+
+// 返回 Asia/Shanghai 下格式化字符串
+export function formatShanghai(iso, { showDate = true, showTime = true } = {}) {
+  const d = new Date(parseShanghaiMs(iso) || iso);
+  if (isNaN(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).formatToParts(d);
+  const get = type => parts.find(p => p.type === type)?.value;
+  if (showDate && showTime) return `${get('year')}年${get('month')}月${get('day')}日 ${get('hour')}:${get('minute')}`;
+  if (showDate) return `${get('year')}年${get('month')}月${get('day')}日`;
+  return `${get('hour')}:${get('minute')}`;
+}
+
+export function shanghaiDateKey(iso) {
+  const d = new Date(parseShanghaiMs(iso) || iso);
+  if (isNaN(d.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(d);
+  const get = type => parts.find(p => p.type === type)?.value;
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
+export function shanghaiStartOfDay(iso) {
+  const ms = parseShanghaiMs(iso);
+  if (ms == null) return null;
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function shanghaiAddMs(ms, add) {
+  return ms + add;
+}
+
+export function shanghaiEndOfDay(iso) {
+  const ms = parseShanghaiMs(iso);
+  if (ms == null) return null;
+  const d = new Date(ms);
+  d.setHours(23, 59, 59, 999);
+  return d.getTime();
+}

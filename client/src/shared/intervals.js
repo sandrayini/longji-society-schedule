@@ -1,16 +1,33 @@
-function parseISO(iso) {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.getTime();
+// 统一按 Asia/Shanghai 时区解析时间字符串，数字毫秒直接透传
+function parseTime(v) {
+  if (typeof v === 'number') return v;
+  if (typeof v !== 'string' || !v) return null;
+  if (/^-?\d+$/.test(v.trim())) return Number(v.trim());
+  const str = String(v);
+  const d = new Date(str);
+  // 带 Z 或显式时区偏移：已是绝对时刻，直接取 UTC 毫秒
+  if (/Z$|\.\d+Z?$/.test(str) || /[+-]\d{2}:\d{2}$/.test(str)) {
+    return d.getTime();
+  }
+  // 无后缀的 YYYY-MM-DDTHH:mm 视为 Asia/Shanghai 的本地时间
+  const [date, time] = str.split('T');
+  if (!date || !time) return null;
+  const [y, mo, da] = date.split('-').map(Number);
+  const [h, m] = (time || '00:00').split(':').map(Number);
+  return Date.UTC(y, mo - 1, da, h - 8, m, 0);
 }
+
+export const MS_MIN = 60 * 1000;
+export const MS_HOUR = 60 * MS_MIN;
+export const MS_DAY = 24 * MS_HOUR;
 
 function normalizeIntervals(intervals, options = {}) {
   if (!intervals || intervals.length === 0) return [];
   const { min, max, clip = false } = options;
   let list = intervals
     .map(iv => {
-      const s = typeof iv.start === 'string' ? parseISO(iv.start) : Number(iv.start);
-      const e = typeof iv.end === 'string' ? parseISO(iv.end) : Number(iv.end);
+      const s = parseTime(iv.start);
+      const e = parseTime(iv.end);
       if (s === null || e === null || s >= e) return null;
       return { start: s, end: e };
     })
@@ -71,7 +88,7 @@ function subtractIntervals(total, toRemove) {
 
 function memberFreeIntervals(range, member) {
   const { free = [], busy = [] } = member;
-  const rangeMs = { start: parseISO(range.start), end: parseISO(range.end) };
+  const rangeMs = { start: parseTime(range.start), end: parseTime(range.end) };
   const freeNorm = normalizeIntervals(free, { min: rangeMs.start, max: rangeMs.end, clip: true });
   const busyNorm = normalizeIntervals(busy, { min: rangeMs.start, max: rangeMs.end, clip: true });
 
@@ -86,7 +103,7 @@ function memberFreeIntervals(range, member) {
 }
 
 function computeCommonFree(range, members) {
-  const rangeMs = { start: parseISO(range.start), end: parseISO(range.end) };
+  const rangeMs = { start: parseTime(range.start), end: parseTime(range.end) };
   const warnings = [];
   const submitted = [];
   for (const m of members) {
@@ -126,11 +143,81 @@ function computeCommonFree(range, members) {
   return { common, fallback, warnings };
 }
 
+function floorToSlot(ms, slotMs) {
+  return Math.floor(ms / slotMs) * slotMs;
+}
+
+function slotRange(range, slotMs) {
+  const start = floorToSlot(range.start, slotMs);
+  const end = floorToSlot(range.end, slotMs);
+  const slots = [];
+  for (let t = start; t < end; t += slotMs) slots.push(t);
+  return slots;
+}
+
+function countAvailablePerSlot(range, members, slotMs) {
+  const slots = slotRange(range, slotMs);
+  const counts = slots.map(t => ({
+    start: t,
+    end: t + slotMs,
+    count: 0,
+    submittedCount: 0
+  }));
+  for (const m of members) {
+    const free = memberFreeIntervals(range, m);
+    if (free.length === 0 && (m.free?.length || m.busy?.length)) {
+      for (const c of counts) c.submittedCount++;
+      continue;
+    }
+    const hasAny = m.free?.length || m.busy?.length;
+    if (hasAny) {
+      for (const c of counts) c.submittedCount++;
+    }
+    for (const iv of free) {
+      for (const c of counts) {
+        if (c.start < iv.end && iv.start < c.end) c.count++;
+      }
+    }
+  }
+  return counts;
+}
+
+function mergeAdjacentSameCount(slots) {
+  if (slots.length === 0) return [];
+  const result = [{ start: slots[0].start, end: slots[0].end, count: slots[0].count, submittedCount: slots[0].submittedCount }];
+  for (let i = 1; i < slots.length; i++) {
+    const last = result[result.length - 1];
+    const cur = slots[i];
+    if (cur.count === last.count && cur.start === last.end) {
+      last.end = cur.end;
+      last.submittedCount = Math.max(last.submittedCount, cur.submittedCount);
+    } else {
+      result.push({ start: cur.start, end: cur.end, count: cur.count, submittedCount: cur.submittedCount });
+    }
+  }
+  return result;
+}
+
+function topAvailableSlots(range, members, topN = 5) {
+  const rangeDays = (range.end - range.start) / MS_DAY;
+  const slotMs = rangeDays > 2 ? MS_HOUR : 30 * MS_MIN;
+  const counts = countAvailablePerSlot(range, members, slotMs);
+  const merged = mergeAdjacentSameCount(counts);
+  return merged
+    .filter(c => c.count > 0)
+    .sort((a, b) => b.count - a.count || a.start - b.start)
+    .slice(0, topN)
+    .map(c => ({ ...c, slotMs }));
+}
+
 export {
-  parseISO,
+  parseTime,
   normalizeIntervals,
   intersectIntervals,
   subtractIntervals,
   memberFreeIntervals,
-  computeCommonFree
+  computeCommonFree,
+  countAvailablePerSlot,
+  mergeAdjacentSameCount,
+  topAvailableSlots
 };

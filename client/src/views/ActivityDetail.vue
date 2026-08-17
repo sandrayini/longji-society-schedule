@@ -47,6 +47,11 @@
         <CommonFreeTime :activity="activity" :submissions="submissions" />
       </div>
 
+      <div class="card" v-if="activity.type==='tentative'">
+        <div class="card-title"><div class="card-icon" style="background:#7BAE7F">📅</div>空闲日历</div>
+        <FreeCalendar :activity="activity" :submissions="submissions" />
+      </div>
+
       <div class="card" v-if="activity.type!=='vote'">
         <div class="card-title"><div class="card-icon" style="background:#EFA8B8">📋</div>全部提交</div>
         <SubmissionList :activity="activity" :submissions="submissions" />
@@ -75,6 +80,7 @@ import FixedForm from '../components/FixedForm.vue';
 import VoteForm from '../components/VoteForm.vue';
 import VoteResult from '../components/VoteResult.vue';
 import CommonFreeTime from '../components/CommonFreeTime.vue';
+import FreeCalendar from '../components/FreeCalendar.vue';
 import SubmissionList from '../components/SubmissionList.vue';
 
 const route = useRoute();

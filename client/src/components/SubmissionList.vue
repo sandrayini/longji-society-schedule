@@ -17,13 +17,11 @@
       <div class="info">
         <div class="name">{{ s.name }} <span class="time">{{ formatTime(s.updatedAt) }}</span></div>
         <div v-if="activity.type==='tentative'" class="detail">
-          <div v-if="s.data.freeIntervals?.length">
-            <span style="color:#7BAE7F">有空</span>：
-            <span v-for="iv in s.data.freeIntervals" :key="iv.start">{{ formatTime(iv.start) }}-{{ formatTime(iv.end) }} </span>
+          <div v-if="freeTexts(s).length">
+            <span style="color:#7BAE7F">有空</span>：{{ freeTexts(s).join('；') }}；
           </div>
-          <div v-if="s.data.busyIntervals?.length">
-            <span style="color:#EFA8B8">没空</span>：
-            <span v-for="iv in s.data.busyIntervals" :key="iv.start">{{ formatTime(iv.start) }}-{{ formatTime(iv.end) }} </span>
+          <div v-if="busyTexts(s).length">
+            <span style="color:#EFA8B8">没空</span>：{{ busyTexts(s).join('；') }}；
           </div>
           <div v-if="s.data.note" class="note">备注：{{ s.data.note }}</div>
         </div>
@@ -51,6 +49,15 @@ const notSubmitted = computed(() => {
 const going = computed(() => props.submissions.filter(s => s.data?.attending).length);
 const notGoing = computed(() => props.submissions.filter(s => s.data && !s.data.attending).length);
 const notReplied = computed(() => notSubmitted.value.length);
+
+function freeTexts(s) {
+  const data = typeof s.data === 'string' ? JSON.parse(s.data || '{}') : (s.data || {});
+  return (data.freeIntervals || []).map(iv => `${formatTime(iv.start)}-${formatTime(iv.end)}`);
+}
+function busyTexts(s) {
+  const data = typeof s.data === 'string' ? JSON.parse(s.data || '{}') : (s.data || {});
+  return (data.busyIntervals || []).map(iv => `${formatTime(iv.start)}-${formatTime(iv.end)}`);
+}
 
 props.submissions.forEach(s => { if (typeof s.data === 'string') s.data = JSON.parse(s.data || '{}'); });
 </script>
