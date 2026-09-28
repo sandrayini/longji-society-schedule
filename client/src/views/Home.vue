@@ -36,7 +36,10 @@
         </div>
         <div class="activity-title-row">
           <h3 class="activity-title">{{ a.title }}</h3>
-          <button v-if="auth.isAdmin.value" class="delete-btn" @click.stop="confirmDelete(a)">删除</button>
+          <div v-if="auth.isAdmin.value" class="activity-actions">
+            <button class="edit-btn" @click.stop="openEdit(a)">编辑</button>
+            <button class="delete-btn" @click.stop="confirmDelete(a)">删除</button>
+          </div>
         </div>
         <p class="activity-desc">{{ a.description || '暂无内容' }}</p>
         <p v-if="formatActivityTime(a)" class="activity-schedule">{{ formatActivityTime(a) }}</p>
@@ -49,7 +52,7 @@
     </div>
 
     <MemberEditor v-if="showMemberEditor" @close="showMemberEditor=false" @saved="loadMembers" />
-    <ActivityEditor v-if="showActivityEditor" @close="showActivityEditor=false" @saved="loadActivities" />
+    <ActivityEditor v-if="showActivityEditor" :activity="editTarget" @close="closeActivityEditor" @saved="loadActivities" />
   </div>
 </template>
 
@@ -71,6 +74,7 @@ const { activities, load: loadActivities } = useActivities();
 const showMemberEditor = ref(false);
 const showActivityEditor = ref(false);
 const deleteTarget = ref(null);
+const editTarget = ref(null);
 
 const myUserId = computed(() => auth.user.value?.id);
 const myRole = computed(() => auth.user.value?.role);
@@ -92,7 +96,9 @@ function typeColor(a) {
   if (a.type === 'vote') return '#F4A6C3';
   return '#9C8570';
 }
-function openActivityEditor() { showActivityEditor.value = true; }
+function openActivityEditor() { editTarget.value = null; showActivityEditor.value = true; }
+function openEdit(a) { editTarget.value = a; showActivityEditor.value = true; }
+function closeActivityEditor() { showActivityEditor.value = false; editTarget.value = null; }
 function go(a) { router.push(`/activity/${a.id}`); }
 function confirmDelete(a) { deleteTarget.value = a; }
 async function doDelete() {
@@ -141,6 +147,8 @@ async function doDelete() {
 .activity-meta { display: flex; gap: 8px; margin-bottom: 8px; }
 .activity-title { font-size: 16px; margin: 0 0 6px; }
 .activity-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.activity-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.edit-btn { background: transparent; border: 1px solid #8FAECC; color: #8FAECC; border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .delete-btn { background: transparent; border: 1px solid #EFA8B8; color: #EFA8B8; border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; flex-shrink: 0; }
 .my-status { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
 .my-status.filled { background: #E6F4E8; color: #4E8A5A; }

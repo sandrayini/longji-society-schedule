@@ -171,6 +171,16 @@ router.post('/:id/close', authMiddleware, adminOnly, (req, res) => {
   res.json({ ok: true });
 });
 
+router.put('/:id', authMiddleware, adminOnly, (req, res) => {
+  const row = db.prepare('SELECT * FROM activities WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: '活动不存在' });
+  const { title, description, rangeStart, rangeEnd, fixedStart, fixedEnd, deadline } = req.body;
+  if (!title) return res.status(400).json({ error: '标题必填' });
+  db.prepare(`UPDATE activities SET title = ?, description = ?, range_start = ?, range_end = ?, fixed_start = ?, fixed_end = ?, deadline = ? WHERE id = ?`)
+    .run(title, description || '', rangeStart || null, rangeEnd || null, fixedStart || null, fixedEnd || null, deadline || null, req.params.id);
+  res.json({ ok: true });
+});
+
 router.post('/:id/reopen', authMiddleware, adminOnly, (req, res) => {
   const activity = db.prepare('SELECT closed, ended FROM activities WHERE id = ?').get(req.params.id);
   if (!activity) return res.status(404).json({ error: '活动不存在' });

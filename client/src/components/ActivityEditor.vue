@@ -44,21 +44,24 @@
 
       <div class="form-group"><label class="form-label">回复截止时间（可选）</label><input type="datetime-local" v-model="form.deadline" class="input" /></div>
 
-      <button class="btn btn-primary" style="width:100%;margin-top:8px" @click="submit" :disabled="loading">发起活动</button>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px" @click="submit" :disabled="loading">{{ isEdit ? '保存修改' : '发起活动' }}</button>
       <button class="btn btn-secondary" style="width:100%;margin-top:10px" @click="$emit('close')">取消</button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import api from '../api.js';
 import { useToast } from '../composables.js';
-import { toISO, nowLocalInput } from '../utils.js';
+import { toISO, nowLocalInput, inputDatetimeLocal } from '../utils.js';
 
+const props = defineProps({ activity: Object });
 const emit = defineEmits(['close', 'saved']);
 const { show } = useToast();
 const loading = ref(false);
+const isEdit = ref(!!props.activity);
+
 const form = reactive({
   type: 'tentative',
   title: '',
@@ -72,6 +75,24 @@ const form = reactive({
   allowMultiple: false,
   anonymous: false
 });
+
+if (isEdit.value) {
+  const a = props.activity;
+  form.type = a.type;
+  form.title = a.title;
+  form.description = a.description || '';
+  form.rangeStart = a.rangeStart ? inputDatetimeLocal(a.rangeStart) : '';
+  form.rangeEnd = a.rangeEnd ? inputDatetimeLocal(a.rangeEnd) : '';
+  form.fixedStart = a.fixedStart ? inputDatetimeLocal(a.fixedStart) : '';
+  form.fixedEnd = a.fixedEnd ? inputDatetimeLocal(a.fixedEnd) : '';
+  form.deadline = a.deadline ? inputDatetimeLocal(a.deadline) : '';
+  if (a.type === 'vote') {
+    form.options = (a.options || []).map(o => ({ text: o.text }));
+    form.allowMultiple = !!a.allowMultiple;
+    form.anonymous = !!a.anonymous;
+  }
+}
+
 const optionError = ref('');
 
 function addOption() {
@@ -112,12 +133,17 @@ async function submit() {
   }
   loading.value = true;
   try {
-    await api.post('/activities', payload);
-    show('发起成功', 'success');
+    if (isEdit.value) {
+      await api.put(`/activities/${props.activity.id}`, payload);
+      show('修改已保存', 'success');
+    } else {
+      await api.post('/activities', payload);
+      show('发起成功', 'success');
+    }
     emit('saved');
     emit('close');
   } catch (e) {
-    show(e.response?.data?.error || '发起失败', 'error');
+    show(e.response?.data?.error || (isEdit.value ? '修改失败' : '发起失败'), 'error');
   } finally {
     loading.value = false;
   }
